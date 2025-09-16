@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>正在加载...</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                        url('piggod.jpg') no-repeat center center;
+            background-size: cover;
+            color: white;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .loading-container {
+            width: 90%;
+            max-width: 600px;
+            padding: 40px 30px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 20px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .sys-progress-wrap {
+            margin-bottom: 30px;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #ff6b6b, #ffa3a3);
+            box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+            transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                          rgba(255, 255, 255, 0) 0%, 
+                          rgba(255, 255, 255, 0.3) 50%, 
+                          rgba(255, 255, 255, 0) 100%);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .loading-message {
+            font-size: 1rem;
+            min-height: 24px;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: float linear infinite;
+        }
+        
+        @keyframes float {
+            to { transform: translateY(-100vh) rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .loading-container {
+                padding: 30px 20px;
+                width: 95%;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+        }
+        
+        html {
+            scroll-behavior: smooth;
+        }
+        
+        button, .song-item, .play-btn {
+            touch-action: manipulation;
+        }
+        
+        button:active, .song-item:active, .play-btn:active {
+            transform: scale(0.95);
+            transition: transform 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="loading-container">
+        <h1>KING PHONK正在为你加载...</h1>
+        
+        <div class="sys-progress-wrap">
+            <div class="progress-info">
+                <span>加载进度</span>
+                <span id="progressText">0%</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+        
+        <div class="loading-message" id="loadingMessage">正在初始化系统...</div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const config = {
+                redirectUrl: 'index1.php',
+                loadingTime: 6500,
+                delayBeforeRedirect: 0,
+                messages: [
+                    "KING PHONK正在选择线路...",
+                    "KING PHONK正在对歌曲进行排版...",
+                    "KING PHONK正在优化网络...",
+                    "KING PHONK正在对服务器进行散热...",
+                    "KING PHONK已准备就绪!",
+                    "KING PHONK正在重定向..."
+                ],
+                progressColors: [
+                    { percent: 0, color: "linear-gradient(90deg, #ff6b6b, #ffa3a3)" },
+                    { percent: 30, color: "linear-gradient(90deg, #ffa3a3, #fbc2eb)" },
+                    { percent: 60, color: "linear-gradient(90deg, #fbc2eb, #a6c1ee)" },
+                    { percent: 90, color: "linear-gradient(90deg, #a6c1ee, #66ff99)" }
+                ]
+            };
+            
+            // 确保DOM元素获取成功（增加容错）
+            const progressBar = document.getElementById('progressBar') || {};
+            const progressText = document.getElementById('progressText') || {};
+            const loadingMessage = document.getElementById('loadingMessage') || {};
+            const particlesContainer = document.getElementById('particles') || {};
+            
+            // 1. 背景粒子（不影响主逻辑，正常执行）
+            function createParticles() {
+                if (!particlesContainer) return;
+                const particleCount = window.innerWidth < 768 ? 30 : 50;
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.classList.add('particle');
+                    const size = Math.random() * 2 + 1;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    particle.style.left = `${Math.random() * 100}%`;
+                    particle.style.top = `${Math.random() * 100}%`;
+                    const duration = Math.random() * 10 + 10;
+                    particle.style.animationDuration = `${duration}s`;
+                    particle.style.animationDelay = `${Math.random() * 5}s`;
+                    particle.style.opacity = Math.random() * 0.5 + 0.3;
+                    particlesContainer.appendChild(particle);
+                }
+            }
+            
+            // 2. 修复核心：消息更新逻辑+进度计算（确保不卡住）
+            function updateProgressColor(percent) {
+                if (!progressBar.style) return;
+                let targetColor = config.progressColors[0].color;
+                for (let i = config.progressColors.length - 1; i >= 0; i--) {
+                    if (percent >= config.progressColors[i].percent) {
+                        targetColor = config.progressColors[i].color;
+                        break;
+                    }
+                }
+                progressBar.style.background = targetColor;
+            }
+            
+            // 关键修复：简化消息更新逻辑，避免因DOM延迟卡住
+            const startTime = Date.now();
+            function updateProgress() {
+                if (!progressBar.style || !progressText.textContent || !loadingMessage.textContent) return;
+                
+                const now = Date.now();
+                // 强制计算进度（确保随时间增长）
+                const progress = Math.min(100, ((now - startTime) / config.loadingTime) * 100);
+                const roundedProgress = Math.round(progress);
+                
+                // 强制更新进度条和百分比（避免浏览器优化不渲染）
+                progressBar.style.width = `${roundedProgress}%`;
+                progressText.textContent = `${roundedProgress}%`;
+                updateProgressColor(roundedProgress);
+                
+                // 修复消息索引计算：按固定百分比区间切换，确保不跳过
+                let messageIndex = 0;
+                if (roundedProgress >= 1 && roundedProgress < 20) messageIndex = 0;
+                else if (roundedProgress >= 20 && roundedProgress < 40) messageIndex = 1;
+                else if (roundedProgress >= 40 && roundedProgress < 60) messageIndex = 2;
+                else if (roundedProgress >= 60 && roundedProgress < 80) messageIndex = 3;
+                else if (roundedProgress >= 80 && roundedProgress < 100) messageIndex = 4;
+                else if (roundedProgress >= 100) messageIndex = 5;
+                
+                // 直接更新消息，去掉opacity延迟（避免卡住）
+                if (loadingMessage.textContent !== config.messages[messageIndex]) {
+                    loadingMessage.textContent = config.messages[messageIndex];
+                }
+                
+                // 加载完成后正常跳转
+                if (roundedProgress >= 100) {
+                    setTimeout(() => {
+                        const container = document.querySelector('.loading-container');
+                        if (container) container.style.animation = 'fadeIn 0.5s reverse forwards';
+                        setTimeout(() => {
+                            window.location.href = config.redirectUrl;
+                        }, 500);
+                    }, config.delayBeforeRedirect);
+                } else {
+                    // 用setTimeout兜底，避免requestAnimationFrame失效
+                    setTimeout(updateProgress, 50);
+                }
+            }
+            
+            // 3. 修复音频预加载语法错误（中文逗号→英文逗号，避免脚本中断）
+            function preloadTargetPage() {
+                // 修复：把中文逗号改成英文逗号，确保数组语法正确
+                const audioResources = [
+                    'Bloody sunset.mp3',
+                    'FK.At Dusk.mp3',
+                    'FK.No Justice.mp3',
+                    'FK.WAKE UP!.mp3',
+                    'GM.mp3',
+                    'Life and death.mp3',
+                    'neon blade&wake up.mp3',
+                    'Night drift.mp3',
+                    'sea of tranquility.mp3',
+                    'Terrible devil.mp3', // 此处原是中文逗号，已修复
+                    'DHJDN.mp3',
+                    'DHJDN6654.mp3',
+                    'DJKKS.mp3',
+                    'DW.mp3',
+                    'FW.mp3',
+                    'JX.mp3',
+                    'KS.mp3'
+                ];
+                
+                const origin = new URL(config.redirectUrl).origin;
+                // 简化预加载逻辑，避免因资源加载问题阻塞主脚本
+                audioResources.forEach(audioPath => {
+                    try {
+                        const fullUrl = `${origin}/${audioPath}?t=${Date.now()}`;
+                        const audio = new Audio();
+                        audio.preload = 'metadata';
+                        audio.src = fullUrl;
+                        audio.load();
+                    } catch (e) {
+                        // 捕获错误，不影响主逻辑执行
+                        console.log('音频预加载失败：', audioPath);
+                    }
+                });
+                
+                // 提前建立连接（不阻塞主逻辑）
+                try {
+                    const dnsLink = document.createElement('link');
+                    dnsLink.rel = 'dns-prefetch';
+                    dnsLink.href = origin;
+                    document.head.appendChild(dnsLink);
+                    
+                    const preconnectLink = document.createElement('link');
+                    preconnectLink.rel = 'preconnect';
+                    preconnectLink.href = origin;
+                    preconnectLink.fetchpriority = 'high';
+                    document.head.appendChild(preconnectLink);
+                } catch (e) {}
+            }
+            
+            // 启动顺序：先粒子→再进度（确保主逻辑优先）
+            createParticles();
+            // 立即启动进度更新，不依赖其他函数
+            updateProgress();
+            // 预加载放最后，不阻塞主逻辑
+            setTimeout(preloadTargetPage, 300);
+        });
+    </script>
+</body>
+</html>
