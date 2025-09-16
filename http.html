@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KKD音乐站音乐上传</title>
+    <style>
+        /* 全局样式重置与基础配置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+
+        :root {
+            --primary: #165DFF; /* 科技蓝主色调，适配上传功能氛围 */
+            --primary-light: #4080FF;
+            --primary-dark: #0E42D2;
+            --white: #FFFFFF;
+            --gray-100: #F5F7FA;
+            --gray-200: #E5E6EB;
+            --gray-300: #C9CDD4;
+            --gray-500: #86909C;
+            --gray-800: #1D2129;
+            --red: #F53F3F;
+            --green: #00B42A;
+            --shadow: 0 4px 16px rgba(22, 93, 255, 0.1);
+            --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.15);
+            --radius: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #F0F5FF 0%, #E6F0FF 100%); /* 淡蓝渐变背景，柔和不刺眼 */
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* 1. 密码验证弹窗（页面加载即显示） */
+        .pwd-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(6px); /* 毛玻璃效果，增强高级感 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000; /* 最高层级，覆盖所有内容 */
+            transition: var(--transition);
+        }
+
+        .pwd-modal-content {
+            background-color: var(--white);
+            border-radius: var(--radius);
+            width: 100%;
+            max-width: 400px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-modal);
+            transform: translateY(-20px);
+            transition: var(--transition);
+        }
+
+        .pwd-modal-overlay.active .pwd-modal-content {
+            transform: translateY(0);
+        }
+
+        .pwd-modal-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .pwd-input-wrap {
+            margin-bottom: 1.2rem;
+        }
+
+        .pwd-input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 2px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 1rem;
+            color: var(--gray-800);
+            transition: var(--transition);
+        }
+
+        .pwd-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(22, 93, 255, 0.1);
+        }
+
+        .pwd-error-tip {
+            color: var(--red);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            height: 1.2rem; /* 固定高度，避免提示显示时布局跳动 */
+            text-align: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .pwd-error-tip.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .pwd-btn-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 1rem;
+        }
+
+        .pwd-modal-btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .pwd-confirm-btn {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .pwd-confirm-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .pwd-cancel-btn {
+            background-color: var(--gray-100);
+            color: var(--gray-500);
+        }
+
+        .pwd-cancel-btn:hover {
+            background-color: var(--gray-200);
+            color: var(--gray-800);
+        }
+
+        /* 2. 上传功能区域（初始隐藏，密码正确后显示） */
+        .upload-container {
+            max-width: 550px;
+            margin: 60px auto;
+            padding: 2.5rem;
+            background-color: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            transform: opacity 0.5s ease;
+            display: none; /* 初始隐藏 */
+        }
+
+        .upload-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 1.8rem;
+            text-align: center;
+            position: relative;
+            padding-bottom: 0.8rem;
+        }
+
+        .upload-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background-color: var(--primary-light);
+            border-radius: 3px;
+        }
+
+        .file-input-wrap {
+            margin-bottom: 1.5rem;
+        }
+
+        #fileInput {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed var(--gray-200);
+            border-radius: 8px;
+            background-color: var(--gray-100);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        #fileInput:hover {
+            border-color: var(--primary-light);
+            background-color: rgba(22, 93, 255, 0.03);
+        }
+
+        /* 进度与速度显示区域 */
+        .status-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
+            color: var(--gray-800);
+        }
+
+        .status-label {
+            width: 100px;
+            color: var(--gray-500);
+        }
+
+        #progress {
+            flex: 1;
+            height: 8px;
+            appearance: none;
+            border-radius: 4px;
+            background-color: var(--gray-200);
+        }
+
+        #progress::-webkit-progress-bar {
+            border-radius: 4px;
+            background-color: var(--gray-200);
+        }
+
+        #progress::-webkit-progress-value {
+            border-radius: 4px;
+            background-color: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        #progressText, #speedText {
+            font-weight: 500;
+        }
+
+        #speedText {
+            color: var(--primary); /* 速度文字用主色调，更醒目 */
+        }
+
+        /* 上传按钮 */
+        .upload-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 1rem;
+        }
+
+        .upload-btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(22, 93, 255, 0.2);
+        }
+
+        .upload-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 成功弹窗美化 */
+        #successModal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 2.2rem;
+            background-color: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-modal);
+            text-align: center;
+            min-width: 320px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+
+        #successModal.active {
+            display: block;
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .success-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1.2rem;
+            background-color: rgba(0, 180, 42, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .success-icon svg {
+            width: 32px;
+            height: 32px;
+            fill: var(--green);
+        }
+
+        .success-text {
+            font-size: 1.1rem;
+            color: var(--gray-800);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+        }
+
+        .close-modal-btn {
+            padding: 10px 24px;
+            background-color: var(--primary);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .close-modal-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 480px) {
+            .pwd-modal-content {
+                padding: 2rem;
+                max-width: 90%;
+            }
+
+            .upload-container {
+                padding: 1.8rem;
+                margin: 30px auto;
+            }
+
+            .upload-title {
+                font-size: 1.3rem;
+            }
+
+            .status-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+
+            .status-label {
+                width: auto;
+                margin-bottom: 4px;
+            }
+
+            #successModal {
+                padding: 1.8rem;
+                min-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 1. 密码验证弹窗（页面加载即显示） -->
+    <div class="pwd-modal-overlay active" id="pwdModalOverlay">
+        <div class="pwd-modal-content">
+            <h3 class="pwd-modal-title">音乐上传验证</h3>
+            <div class="pwd-input-wrap">
+                <input type="password" class="pwd-input" id="verifyPwd" placeholder="请输入密码" required>
+            </div>
+            <div class="pwd-error-tip active" id="pwdErrorTip">输入正确密码才可使用上传功能</div>
+            <div class="pwd-btn-group">
+                <button class="pwd-modal-btn pwd-confirm-btn" id="pwdConfirmBtn">确认验证</button>
+                <button class="pwd-modal-btn pwd-cancel-btn" id="pwdCancelBtn">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. 上传功能区域（初始隐藏） -->
+    <div class="upload-container" id="uploadContainer">
+        <h3 class="upload-title">上传音乐到KKD音乐站</h3>
+        
+        <div class="file-input-wrap">
+            <input type="file" id="fileInput" accept="*">
+        </div>
+
+        <div class="status-group">
+            <div class="status-item">
+                <span class="status-label">上传进度：</span>
+                <progress id="progress" value="0" max="100"></progress>
+                <span id="progressText">0%</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">上传速度：</span>
+                <span id="speedText">-- KB/s</span>
+            </div>
+        </div>
+
+        <button class="upload-btn" onclick="uploadFile()">开始上传</button>
+
+        <!-- 成功弹窗 -->
+        <div id="successModal">
+            <div class="success-icon">
+                <!-- 成功图标（SVG避免外部资源依赖） -->
+                <svg viewBox="0 0 24 24">
+                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                </svg>
+            </div>
+            <p class="success-text">✅ 音乐上传成功！已保存到文件夹:KKD音乐站/guizi</p>
+            <button class="close-modal-btn" onclick="closeModal()">确定</button>
+        </div>
+    </div>
+
+    <script>
+        // 一、密码验证逻辑
+        const pwdModalOverlay = document.getElementById('pwdModalOverlay');
+        const verifyPwd = document.getElementById('verifyPwd');
+        const pwdErrorTip = document.getElementById('pwdErrorTip');
+        const pwdConfirmBtn = document.getElementById('pwdConfirmBtn');
+        const pwdCancelBtn = document.getElementById('pwdCancelBtn');
+        const uploadContainer = document.getElementById('uploadContainer');
+        const correctPwd = '6654566'; // 正确密码
+
+        // 密码确认验证
+        pwdConfirmBtn.addEventListener('click', () => {
+            const inputPwd = verifyPwd.value.trim();
+            if (inputPwd === correctPwd) {
+                // 密码正确：隐藏弹窗，显示上传区域
+                pwdModalOverlay.classList.remove('active');
+                setTimeout(() => {
+                    pwdModalOverlay.style.display = 'none';
+                    uploadContainer.style.display = 'block';
+                }, 300); // 配合过渡动画，避免突兀
+            } else {
+                // 密码错误：显示提示，输入框抖动
+                pwdErrorTip.textContent = '密码错误!提示:鬼子6654***';
+                pwdErrorTip.classList.add('active');
+                verifyPwd.classList.add('shake');
+                setTimeout(() => verifyPwd.classList.remove('shake'), 500);
+                verifyPwd.focus();
+            }
+        });
+
+        // 取消按钮：刷新页面（或可改为隐藏弹窗但不显示上传区域）
+        pwdCancelBtn.addEventListener('click', () => {
+            window.location.reload();
+        });
+
+        // 回车键提交密码
+        verifyPwd.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') pwdConfirmBtn.click();
+        });
+
+        // 输入框抖动动画
+        const shakeStyle = document.createElement('style');
+        shakeStyle.textContent = `
+            .shake {
+                animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+            }
+            @keyframes shake {
+                10%, 90% { transform: translateX(-1px); }
+                20%, 80% { transform: translateX(2px); }
+                30%, 50%, 70% { transform: translateX(-3px); }
+                40%, 60% { transform: translateX(3px); }
+            }
+        `;
+        document.head.appendChild(shakeStyle);
+
+        // 二、文件上传逻辑（保留原功能，优化样式关联）
+        const fileInput = document.getElementById('fileInput');
+        const progress = document.getElementById('progress');
+        const progressText = document.getElementById('progressText');
+        const speedText = document.getElementById('speedText');
+        const modal = document.getElementById('successModal');
+        let startTime;
+
+        function uploadFile() {
+            const file = fileInput.files[0];
+            if (!file) return alert('请先选择要上传的文件！');
+            
+            const formData = new FormData();
+            formData.append('uploadFile', file);
+            const xhr = new XMLHttpRequest();
+            
+            xhr.open('POST', 'https.php', true);
+
+            // 上传开始：记录时间，初始化速度
+            xhr.upload.onloadstart = () => {
+                startTime = Date.now();
+                speedText.textContent = '-- KB/s';
+            };
+
+            // 实时更新进度与速度
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    // 进度更新
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    progress.value = percent;
+                    progressText.textContent = `${percent}%`;
+
+                    // 速度计算
+                    const elapsedTime = (Date.now() - startTime) / 1000;
+                    if (elapsedTime > 0.1) {
+                        const speedBps = e.loaded / elapsedTime;
+                        const speedKbps = speedBps / 1024;
+                        
+                        if (speedKbps > 1024) {
+                            speedText.textContent = `${(speedKbps / 1024).toFixed(1)} MB/s`;
+                        } else {
+                            speedText.textContent = `${speedKbps.toFixed(1)} KB/s`;
+                        }
+                    }
+                }
+            };
+
+            // 上传完成回调
+            xhr.onload = () => {
+                let res;
+                try {
+                    res = JSON.parse(xhr.responseText);
+                } catch (err) {
+                    res = { status: 'error', msg: '服务器响应格式错误' };
+                }
+
+                if (xhr.status === 200 && res.status === 'success') {
+                    modal.classList.add('active');
+                } else {
+                    alert(`上传失败：${res.msg || '未知错误'}`);
+                    speedText.textContent = '-- KB/s';
+                }
+            };
+
+            // 网络错误处理
+            xhr.onerror = () => {
+                alert('上传失败：你不会刷新网页吗？');
+                speedText.textContent = '-- KB/s';
+            };
+
+            xhr.send(formData);
+        }
+
+        // 关闭成功弹窗并重置状态
+        function closeModal() {
+            modal.classList.remove('active');
+            progress.value = 0;
+            progressText.textContent = '0%';
+            speedText.textContent = '-- KB/s';
+            fileInput.value = '';
+        }
+    </script>
+</body>
+</html>

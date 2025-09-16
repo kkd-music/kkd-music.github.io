@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Web3D纹理替换示例</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <style> body { margin: 0; } canvas { display: block; } </style>
+</head>
+<body>
+<script>
+    // 1. 创建场景、相机、渲染器（与之前相同）
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+    camera.position.z = 5;
+
+    // 2. 创建纹理加载器
+    const textureLoader = new THREE.TextureLoader();
+
+    // 3. 创建立方体（使用纹理材质）
+    const geometry = new THREE.BoxGeometry(2, 2, 2);
+    const texture = textureLoader.load('./texture.jpg'); // 加载纹理
+    texture.flipY = false; // 可选：修正纹理方向
+    const material = new THREE.MeshPhongMaterial({ map: texture, specular: 0xffffff });
+    const cube = new THREE.Mesh(geometry, material);
+    scene.add(cube);
+
+    // 4. 添加灯光（否则纹理可能显示为黑色）
+    const light = new THREE.PointLight(0xffffff, 1.5);
+    light.position.set(5, 5, 5);
+    scene.add(light);
+
+    // 5. 动画循环和交互（与之前相同）
+    function animate() {
+        requestAnimationFrame(animate);
+        cube.rotation.x += 0.01;
+        cube.rotation.y += 0.02;
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // 6. 点击变色（示例：替换纹理为随机颜色）
+    window.addEventListener('click', () => {
+        const randomColor = Math.floor(Math.random() * 0xffffff);
+        material.color.set(randomColor); // 颜色会覆盖纹理，需谨慎使用
+    });
+</script>
+</body>
+</html>
